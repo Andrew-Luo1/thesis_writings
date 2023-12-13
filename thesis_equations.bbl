@@ -1,0 +1,129 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{ynt/global//global/global}
+    \entry{featherstoneRigidBodyDynamics2008}{book}{}
+      \name{author}{1}{}{%
+        {{hash=fa3cce175250fcafb8ef938e29b16b05}{%
+           family={Featherstone},
+           familyi={F\bibinitperiod},
+           given={Roy},
+           giveni={R\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Boston, MA}%
+      }
+      \list{publisher}{1}{%
+        {Springer US}%
+      }
+      \strng{namehash}{fa3cce175250fcafb8ef938e29b16b05}
+      \strng{fullhash}{fa3cce175250fcafb8ef938e29b16b05}
+      \strng{bibnamehash}{fa3cce175250fcafb8ef938e29b16b05}
+      \strng{authorbibnamehash}{fa3cce175250fcafb8ef938e29b16b05}
+      \strng{authornamehash}{fa3cce175250fcafb8ef938e29b16b05}
+      \strng{authorfullhash}{fa3cce175250fcafb8ef938e29b16b05}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{isbn}{978-0-387-74314-1}
+      \field{langid}{english}
+      \field{title}{Rigid {{Body Dynamics Algorithms}}}
+      \field{urlday}{13}
+      \field{urlmonth}{12}
+      \field{urlyear}{2023}
+      \field{year}{2008}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \verb{doi}
+      \verb 10.1007/978-1-4899-7560-7
+      \endverb
+      \verb{file}
+      \verb /home/andrew/Apps/Zotero/storage/TA8NGPBS/Featherstone - 2008 - Rigid Body Dynamics Algorithms.pdf
+      \endverb
+      \verb{urlraw}
+      \verb http://link.springer.com/10.1007/978-1-4899-7560-7
+      \endverb
+      \verb{url}
+      \verb http://link.springer.com/10.1007/978-1-4899-7560-7
+      \endverb
+    \endentry
+    \entry{jacksonPlanningAttitude2021}{article}{}
+      \name{author}{3}{}{%
+        {{hash=7a1a63a4631bcd99c6ac5e6777926f10}{%
+           family={Jackson},
+           familyi={J\bibinitperiod},
+           given={Brian\bibnamedelima E.},
+           giveni={B\bibinitperiod\bibinitdelim E\bibinitperiod}}}%
+        {{hash=786e635a410ab7ed376b86609752c398}{%
+           family={Tracy},
+           familyi={T\bibinitperiod},
+           given={Kevin},
+           giveni={K\bibinitperiod}}}%
+        {{hash=80368904822b04c7e38316bb5a9dfd29}{%
+           family={Manchester},
+           familyi={M\bibinitperiod},
+           given={Zachary},
+           giveni={Z\bibinitperiod}}}%
+      }
+      \strng{namehash}{0508cad034799ce3784b1dba215cd798}
+      \strng{fullhash}{0508cad034799ce3784b1dba215cd798}
+      \strng{bibnamehash}{0508cad034799ce3784b1dba215cd798}
+      \strng{authorbibnamehash}{0508cad034799ce3784b1dba215cd798}
+      \strng{authornamehash}{0508cad034799ce3784b1dba215cd798}
+      \strng{authorfullhash}{0508cad034799ce3784b1dba215cd798}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Planning trajectories for floating-base robotic systems that experience large attitude changes is challenging due to the nontrivial group structure of 3D rotations. This paper introduces a powerful and accessible approach for optimizationbased planning on the space of rotations using only standard linear algebra and vector calculus. We demonstrate the effectiveness of the approach by adapting Newton’s method to solve the canonical Wahba’s problem, and modify the trajectory optimization solver ALTRO to plan directly on the space of unit quaternions, achieving superior convergence on problems involving significant changes in attitude.}
+      \field{issn}{2377-3766, 2377-3774}
+      \field{journaltitle}{IEEE Robotics and Automation Letters}
+      \field{langid}{english}
+      \field{month}{7}
+      \field{number}{3}
+      \field{shortjournal}{IEEE Robot. Autom. Lett.}
+      \field{title}{Planning {{With Attitude}}}
+      \field{urlday}{13}
+      \field{urlmonth}{12}
+      \field{urlyear}{2023}
+      \field{volume}{6}
+      \field{year}{2021}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \field{pages}{5658\bibrangedash 5664}
+      \range{pages}{7}
+      \verb{doi}
+      \verb 10.1109/LRA.2021.3052431
+      \endverb
+      \verb{file}
+      \verb /home/andrew/Apps/Zotero/storage/QMCEZTKX/Jackson et al. - 2021 - Planning With Attitude.pdf
+      \endverb
+      \verb{urlraw}
+      \verb https://ieeexplore.ieee.org/document/9326337/
+      \endverb
+      \verb{url}
+      \verb https://ieeexplore.ieee.org/document/9326337/
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

@@ -1,0 +1,370 @@
+\documentclass{article}
+
+\usepackage{graphicx} % Required for inserting images
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[
+    backend=biber,
+    style=ieee,
+    sorting=ynt
+]{biblatex}
+\addbibresource{bibliography.bib}
+
+\newtheorem{claim}{Claim}[section]
+
+\title{Topics on Differentiable Simulation}
+\author{Jing Yuan Luo}
+
+\begin{document}
+
+\maketitle
+
+\section{Literature Review}
+
+Brief write-ups on all underactuated robotics chapters \cite{featherstoneRigidBodyDynamics2008} \cite{jacksonPlanningAttitude2021}
+
+Vision-Based Locomotion:
+- Underactuated robotics pixels to torque chapter: there's a lack of results.
+- Using deep RL
+- No-one's done it on a non-trivial system yet
+
+Analytical Policy Gradients:
+- Brief lit review. Ex: RL search for LQR.
+- Suh contact rich ...
+- RL from the perspective of continuous control
+- Na Li ...
+
+\section{Very Small Policy}
+\label{ch_1}
+We work with a 12-DoF quadruped (3 per limb) in a discrete simulator. For Table \ref{tab:ch_1_symbols}, N = 18, M = 12, D = 48. The idea is to have a locomotion policy with very few parameters, by learning how to go in the desired directions. Since all joints are revolute, their coordinates are simply scalar radians.
+
+\renewcommand{\arraystretch}{1.3}
+\begin{table}[ht]
+
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Symbol} &                                                                              \\
+        \hline
+        k               & timestep                                                                     \\
+        \hline
+        K               & timesteps per gradient update                                                \\
+        \hline
+        $x$             & full state; $[q^T, \dot{q}^T]^T \in \mathbb{R}^{2N}$                         \\
+        \hline
+        $u$             & action $\in \mathbb{R}^M$                                                    \\
+        \hline
+        $\theta$        & policy parameters $\in \mathbb{R}^D$                                         \\
+        \hline
+        $\pi$           & policy: $\mathbb{R}^N \times \mathbb{R}^D \rightarrow \mathbb{R}^M$          \\
+        \hline
+        $f$             & simulation step: $\mathbb{R}^N \times \mathbb{R}^M \rightarrow \mathbb{R}^N$ \\
+        \hline
+        $q$             & vector of coordinates: $[q_B^T, q_J^T]^T$                                    \\
+        \hline
+        $q_B$           & vector of floating base coordinates $\in \mathbb{R}^6$                       \\
+        \hline
+        $q_J$           & vector of joint coordinates $\in \mathbb{R}^M$                               \\
+        \hline
+        $\dot{q}$       & vector of velocities: $[\dot{q}_B^T, \dot{q}_J^T]^T$                         \\
+        \hline
+        $r_k$           & reference position at timestep k $\in \mathbb{R}^M$                          \\
+        \hline
+        $K$             & diagonal matrix of P-gains $\in \mathbb{R}^{M\times M}$                      \\
+        \hline
+        $K_D$           & diagonal matrix of D-gains $\in \mathbb{R}^{M\times M}$                      \\
+        \hline
+    \end{tabular}
+
+    \caption{Notation}
+    \label{tab:ch_1_symbols}
+\end{table}
+
+\textbf{System:}
+\begin{gather}
+    u_k = \pi(x_k, \theta) \\
+    x_{k+1} = f(x_{k}, u_{k})
+\end{gather}
+
+\textbf{Policy:} Each limb $j$ tracks a 4-parameter sine reference using a PD controller.
+\begin{gather}
+    u_k = \pi(x_k, \theta) = K(r(k;\theta) - q_{J,k}) + K_d(-\dot{q}_{J,k})\\
+    r(k; \theta)_j = a_j \sin(2\pi \mbox{\mbox{dt}} s_j k + \psi_j) + b_j \\
+    \theta_j \doteq [a_j, s_j, \psi_j, b_j]
+    \mbox{ for } j \in \{1, ..., M\}
+\end{gather}
+
+\textbf{Problem Formulation: }
+\begin{gather}
+    \underset{\theta}{\min} \mbox{ } L(\theta, S) \\
+    L(\theta, S) = \sum_{k=0}^{K-1} \frac{1}{2} || S(x^* - x_{k+1}) ||^2
+\end{gather}
+
+Where $S \in \mathbb{R}^{N\times N}$ is a (weighted) selection matrix for the dimensions to penalize for error and $q^*_B$ is the desired end position. For forward locomotion, by symmetry of the quadruped, we can constrain the parameters, reducing $\theta$ from $\mathbb{R}^{48}$ to $\mathbb{R}^5$:
+\begin{enumerate}
+    \item Static hips: $a_j= 0$ for all four hip joints.
+    \item \textit{Synchronization Constraints}
+          \begin{enumerate}
+              \item Using $\psi_j$: thighs and shanks have a $\pi/2$ phase offset. Opposite pairs of legs have a $\pi$ offset.
+              \item $s^i$ = $s^j$ for all i, j. (fixed period scale)
+          \end{enumerate}
+\end{enumerate}
+
+% \begin{claim}[Policy Gradient for Sinusoidal Policies]
+
+\textbf{Analytical Policy Gradient: } \textit{wlog}, assume S is $\mathbb{I}_{2N\times 2N}$. We can make this assumption because for any k, $||S(x^* - x_{k+1})||^2 = (x^* - x_{k+1})^T S^T S (x^* - x_{k+1})$. Since $S^T S = S$, we simply expand out the quadratic form: $\sum_{i\in \mathcal{S}} (x^*_i - x_{k+1, i})^2$ where $\mathcal{S}$ is the set of indices where the diagonal entry of S is 1.
+This sum is simply $(x_\mathcal{S}^* - x_{\mathcal{S},k+1})^T \mathbb{I}(x_\mathcal{S}^* - x_{\mathcal{S},k+1})$, preserving the form resulting from the above assumption.
+
+Denote $l_k(\theta) \doteq 1/2 ||(x^* - x_{k+1}) \mathbb{I} (x^* - x_{k+1})||$. Assume that the partial derivatives $\frac{\partial}{\partial \theta_m} x_{k+1, l}$ exist everywhere for all m and l. Then, the total derivatives are equivalent to the jacobians and we can apply the chain rule. All terms obtainable from the differentiable simulation are green, those from previous timesteps are blue.
+
+\begin{gather}
+    \nabla_\theta \sum_{k=0}^{K-1} \frac{1}{2} || \mathbb{I}(x^* - x_{k+1}) ||^2 = \sum_{k=0}^{K-1} \frac{1}{2} \nabla_\theta l_k \\
+    \nabla_\theta l_k = 2(x^* - x_{k+1})^T \nabla_\theta f(x_k, u_k)
+    \label{pgs_deriv_quad_form}\\
+    \nabla_\theta (f(x_k, u_k)) = \textcolor{green}{\nabla_{x_k} f(x_k,u_k)} \textcolor{blue}{\nabla_\theta x_k} + \textcolor{green}{\nabla_{u_k} f(x_k, u_k)} \nabla_\theta u_k
+    \label{pgs_chain_rule_1}\\
+    \nabla_\theta u_k = \nabla_r u_k \nabla_\theta r + \nabla_{q_J} u_k \textcolor{blue}{\nabla_\theta q_J}
+    \label{pgs_chain_rule_2}\\
+    = K (\nabla_\theta r - \textcolor{blue}{\nabla_\theta q_J})
+    \label{pgs_deriv_Ax}\\
+    \nabla_\theta r(k; \theta)_{j, I(j)} = \left[ \begin{array}{c} sin(2\pi \mbox{dt} s_j k + \psi_j) \\ a_j cos(2\pi \mbox{\mbox{dt}} s_j k + \psi_j) 2\pi \mbox{\mbox{dt}} k \\ a_j cos(2\pi \mbox{\mbox{dt}} s_j k + \psi_j) \\ 1 \end{array} \right]
+    \label{pgs_funky_index}
+\end{gather}
+
+Where steps (\ref{pgs_chain_rule_1}) and (\ref{pgs_chain_rule_2}) follow from the multivariate chain rule and steps (\ref{pgs_deriv_quad_form}) and (\ref{pgs_deriv_Ax}) follow from matrix calculus. In step (\ref{pgs_funky_index}), j corresponds to joint indies and $I(j)$ designates the sequential indicies of the parameters corresponding joint j: $I(j): j \mapsto \{ 4(j-1) + 1, ...,4(j-1) + 4 \}$.
+
+Note: Select particular states in the loss function by extracting the relevant rows of the error vector and the gradient calculated in step (\ref{pgs_chain_rule_1}). $\square$
+
+\textbf{Algorithm: }
+
+Let $\bar{\theta}$ be the unique parameters resulting from the constraints, indexed by $p \in \{1, ..., P \}$. Let $\mathcal{I}(p)$ be the set of indicies i of $\theta$ that go into $p$. Note that we can update the reference $x^*$ in different epochs, to achieve different positions.
+
+\begin{algorithm}[H]
+    \SetKw{init}{Initialisation:}
+
+    \SetAlgoLined
+    \init\ Initialize $x^*$, $x_0$, $\theta_0$ \\
+    \For{$e = 1, 2, ..., \infty$}{
+    $x^*, S \leftarrow \mbox{ update(e)}$ \\
+    Store K samples $\{x_k, u_k, \nabla_x f(x_k, u_k), \nabla_u f(x_k, u_k) \}_{k=0}^{K-1}$ \\
+
+    $\theta_{k+1} \leftarrow (1-\alpha)\theta_{k} + \alpha\nabla_\theta L(\theta_k, S)$ \\
+    \For{p = 1, ..., P}{
+        $\bar{\theta}_p \leftarrow \frac{1}{\mathcal{I}(p)} \sum_{l \in \mathcal{I}(p)} \theta_{k+1, l}$\\
+        $\theta_{k+1, l} \leftarrow \bar{\theta}_p $ for all $l \in \mathcal{I}(P)$
+    }
+    }
+    \caption{Constrained online gradient descent}
+    \label{algo:tiny_OGD}
+\end{algorithm}
+
+
+\section{Gradients}
+\subsection{Linearized Models}
+
+Because of the our stronger understanding of linear systems, it is often worthwhile to work on linearized versions of non-linear systems. Specifically, say we linearize at timestep $l$, and try to predict the state at timestep $k+1$. Taylor's multivariate theorem implies (under a relaxed set of technical assumptions):
+
+\begin{gather}
+    f(x_k, u_k) = f(x_l, u_l) + J_x f(x_l, u_l)\Delta x + J_u f(x_l, u_l)\Delta u + \label{eqn:jaclin}\\
+    \mathcal{O}(\Delta x ^ 2) + \mathcal{O}(\Delta u ^ 2) + \mathcal{O}(\Delta x \Delta u) \label{eqn:error_terms} \\
+    \mbox{Where } \Delta x \doteq x_k - x_l, \Delta u \doteq u_k - u_l \\
+    [J_x f(x_l, u_l)]_{i,j} \doteq \frac{\partial f_i(x_l, u_l)}{\partial x_j} \\
+    [J_u f(x_l, u_l)]_{i,n} \doteq \frac{\partial f_i(x_l, u_l)}{\partial u_n} \\
+\end{gather}
+
+Clearly, the linearization is practical if and only if the error terms (\ref{eqn:error_terms}) show good scaling properties.
+
+\subsection{Linearizing Models with Orientation State}
+
+\begin{center}
+    \textbf{Representing Orientation}
+\end{center}
+
+While the translational orientation and angular velocity of a system are quantities easily represented in $\mathbb{R}^3$, representing its angular orientation is far less trivial.
+
+Orientation is typically represented (via a \textit{parameterization}) with respect to a fixed "Newtonian" or "Inertial" frame. These parameterizations vary greatly in size and mathematical properties. A result by Euler indicates that any orientation can be represented by a 3D axis of rotation (typically normalised) and a rotation amount around that axis. There are many 3-parameter representations of orientation, most of which can be understood through this intuition.
+
+However, it is well-known that all 3-parameter representations suffer from \textit{singularities}. As a simple example, consider the commonly used Rodriguez parameterization. Let $\pmb{n}$ be the normalised euler angle and $\theta$ be the rotation amount. Then, this representation can be written as:
+
+\begin{gather}
+    \tan\left(\frac{\theta}{2}\right)\pmb{n} \label{eqn:rp}
+\end{gather}
+
+Since $\tan(\cdot) = \frac{\sin(\cdot)}{\cos(\cdot)}$, we see that the paramterization is infinite at $\theta = \pi$. The weakness of this particular parameterization is that it can only be used to represent small deviations in orientation.
+
+Unit quaternions have unit L2-norm. They represent orientation using four parameters and do not suffer from singularities. They can be written as:
+
+\begin{gather}
+    \left(
+    \begin{array}{c} \cos(\frac{\theta}{2}) \\
+        \sin(\frac{\theta}{2}) \pmb{n}\end{array}
+    \right)
+\end{gather}
+
+A key property of unit quaternions is that one can define a simple multiplication primitative between them that is both closed (the result is also a unit quaternion) and associative (a rotation from $l$ to $m$ with a rotation from $m$ to $n$ equals one from $l$ to $n$). Let $\pmb{v}$ and $s$ be the vector and scalar parts of the unit quaternion; $\pmb{v} \doteq \sin(\frac{\theta}{2})\pmb{n}, s = \cos(\frac{\theta}{2})$.
+
+This primitive is as follows:
+
+\begin{gather}
+    q^a \circ q^b = L(q^a)q^b \label{eqn:quat_mat_mult}\\
+    L(q) = \left[
+        \begin{array}{cccc}
+            s       &      & -\pmb{v}^T &      \\
+                    & s    & v_3        & -v_2 \\
+            \pmb{v} & -v_3 & s          & v_1  \\
+                    & v_2  & -v_1       & s
+        \end{array}
+        \right]
+\end{gather}
+
+Where \ref{eqn:quat_mat_mult} indicates the standard matrix-vector product.
+
+Note that for several 3-dimensional orientation parameterizations, conversion to and from unit quaternions is simple. For instance, the rodriguez parameterization of a unit quaternion is simply $\pmb{r} = \pmb{v}/s$. To return to a unit quaternion, one simply normalizes the vector $[1 \pmb{r}]$.
+
+\begin{center}
+    \textbf{Attitude Jacobians}
+\end{center}
+
+% If the state $x$ represents orientation using a unit quaternion, naively applying Eqn.(\ref{eqn:jaclin}) is incorrect, since the output quaternions of the linearized model are no longer guaranteed to be of unit norm.
+
+A robust way to linearize models with quaternion orientation is the method of attitude jacobians. Attitude jacobians are motivated by two observations. First, small differences in orientation do not correspond the the mathematical operation of coordinate subtraction that is usually used in first-order methods. For instance, the taylor series of a scalar function x would be:
+\begin{gather}
+    f(x) \approx x_l + \frac{\partial f}{\partial x}(x - x_l)
+\end{gather}
+With $\Delta x = x - x_l$ representing the difference between the linearization point $x_l$ and $x$. Say we replaced x with $q_k$; $\Delta q_k \doteq q_k - q_l$ is \textit{not} a unit quaternion representation of the orientation between $q_l$ and $q$. Indeed, defining $_a q_b$ as the orientation of some frame b relative to frame a, $\Delta q_k$ should instead be written as $_l q_k$ such that $_Iq_k = _Iq_l \circ _lq_k$. Here, I denotes the inertial frame. Going forward, we use $\tilde{q}$ to for small quaternion orientation differences.
+
+Second, if we use this method to represent small differences in orientation, the \textit{locality} of the first order approximation may not hold. In the above scalar example, $\Delta x \in \mathbb{R}$ can be arbitrarily small. In comparison, $||\tilde{q}|| = 1 \mbox{ } \forall q \in Q$, where Q is the space of unit quaternions. Note that there are other orientation representations that can have arbitrary norms. For instance, the rodriguez parameterization (eqn. \ref{eqn:rp}) shrinks to zero norm for small orientation changes. It captures both the the mathematics of the taylor series and the representation of relative orientation.
+
+The attitude jacobian leverages the first observation by working with "legal" representations of small orientation changes $\tilde{q}$, and by doing the first-order approximations using the rodriguez parameterization. We will denote $\Phi(q)$ as the transformation from the quaternion to the rodriguez parameterization of the same orientation.
+
+% The key idea is that instead of representing $q$ as $q_l + \Delta{q}$, we say $q = q_l \circ \tilde{q}$, where $\tilde{q} = \Phi^{-1}(\tilde{\pmb{r}})$. Here, $\tilde{\pmb{r}}$ is the difference in orientation between $q$ and its linearization point $q_l$ represented in rodriguez parameters and $\Phi^{-1}(\cdot)$ is the function mapping this to its quaternion representation.
+
+We now define the \textbf{Attitude Jacobian}:
+\begin{gather}
+    G(q) = L(q)H \\
+    H = \left[
+        \begin{array}{c}
+            \pmb{1}_{1x3} \\
+            \mathbb{I}_{3x3}
+        \end{array}
+        \right] \\
+    G(q) \in \mathbb{R}^{4\times 3}
+\end{gather}
+
+Now, let $f_1: Q \rightarrow \mathbb{R}^p$ be a function mapping from the space of unit quaternions to p-dimensional real numbers, and $f_2: Q \rightarrow Q$ map between unit quaternions. It can be shown that to a first-order approximation:
+\begin{gather}
+    f_1(q) \approx f_1(q_l) + J_{q} f_1(q_l) G(q_l) \tilde{\pmb{r}} \\
+    f_2(q) \approx f_2(q_l) \circ \Phi^{-1}(G(q_{l+1})^T J_q f_2(q_l) G(q_l) \tilde{\pmb{r}}) \\
+    q_{l+1} \doteq f_2(q_l) \\
+\end{gather}
+
+Note that $\pmb{\tilde{r}}$ is the rodriguez representation of the orientation difference from $q_l$ to $q$, i.e. $\pmb{\tilde{r}} = \Phi(\tilde{q})$. Note also:
+
+\begin{gather}
+    \tilde{q} = L^T(q_l)q
+\end{gather}
+
+We now have the ingredients to define the attitude jacobian method.
+
+% TODO
+% - The problem: simulator step function. 
+%     - Minimal state
+% - Define stuff in terms of deltas.
+% - Equations. Label \tilde(A), \tilde(B). 
+
+These modified A and B matricies represent the linearized system dynamics. For instance, applied to the Linear Quadratic Regulator problem, the output policy matrix of Ricatti Recursion performs remarkably well in stabilizing out disturbances in orientation state [TODO: Cite Manchester lectures].
+
+\subsection{Quadruped dynamics are highly non-linear}
+
+\begin{center}
+    \textbf{Linearized Optimal Control}
+\end{center}
+
+Practical schemes to control non-linear systems often involve linearizing them at known points. This is used, for instance, in Linear MPC, in which an expensive trajectory optimisation is performed offline, resulting in ${\bar{x}_i, \bar{u}_i}_{i=1}^{T}$. T linearizations are performed around these points, and a linear MPC problem is solved using them. This has the advantage of quick and reliable online solving - if the engineer selects a cost function and constraints such that the problem is quadratic, it can typically be solved in one step by mature solvers such as Ipopt.
+
+\begin{algorithm}[H]
+    \SetKw{init}{Initialisation:}
+
+    \SetAlgoLined
+    \init\ Initialize $x^*$, $x_1$, $u_1$ \\
+    \For{$k = 1, 2, ..., \infty$}{
+
+    $A \leftarrow J_x f(x_k, u_k)$ \\
+    $B \leftarrow J_u f(x_k, u_k)$ \\
+    $b \leftarrow f(x_k, u_k)$ \\
+    $\{u_\kappa, x_\kappa \}_{\kappa = k+1}^{k+H}$ = LinearMPCTracking(A, B, b, $x_k$, $u_k$, $x^*$, $x_k$) \\
+    apply $u_{k+1}$ \\
+    measure $x_{k+1}$
+    }
+    \caption{Linearized Fixed Reference Tracking}
+    \label{algo:LFRT}
+\end{algorithm}
+
+LinearMPCTracking (LMT) is defined as:
+\begin{gather}
+    LMT(A, B, b, x_{lin}, u_{lin}, x^*, x_{init}) = \\
+    \underset{\underset{k = 1,...,H}{x_k, u_k}}{min} (x_H - x^*)^T Q_1 (x_H - x^*) + \sum_{k=1}^{H-1} (x_k - x^*)^T Q_1 (x_k - x^*) + \alpha u_k^T Q_2 u_k \\
+    \mbox{subject to:} \\
+    u_{\mathcal{B}} = 0 \\
+    x_1 = x_{init} \\
+    x_H = x^* \\
+    x_{k+1} = b + A(x_{k} - x_{lin}) + B(u_{k} - u_{lin}) \label{eqn:LMT_dynconstr} \\
+    k = {1, ..., H}
+\end{gather}
+
+Q1 and Q2 are square $N\times N$ matricies set to identity, $\alpha$ sets the penalty for large controls and is tuned. The dynamics constraints (\ref{eqn:LMT_dynconstr}) are a first-order approximation, using jacobians given by a differentiable simulator.
+
+\begin{center}
+    \textbf{Gradient Analysis}
+\end{center}
+
+Linearization techniques are not easily applicable to Anymal. For instance, the above straight-forward algorithm fails for the simple control task of standing. This section indicates empirical evidence as to why this may be the case - the combination of the task and and robot is so non-linear that the approximation guarantees from linearization are within a region so small as to be impractical.
+
+\begin{center}
+    \textit{Setup}
+\end{center}
+
+We apply a simple PD controller separately to each joint, with gains of $K$ = 150 and $K_d = 1.5$. We initialize the Anymal at $x_1 = x^*$, and the controller achieves near-perfect stabilization at the target $x^*$ after some initial transients. In this analysis, we observe the states of the right front (RF) leg. These were observed to be the same as those of the other legs, and are more relevant to control than the states of the robot body.
+
+% TODO: FIGURE: Right front leg. All three joints. Uncentered. Show the references as dotted lines. 
+
+Proceeding, we focus on the state of the knee joint, which was observed to have the largest oscillations. We implement the distance $\Delta$ by using states and control inputs from $d$ timesteps ago - the larger $d$ is, the larger the state. We chose this rather than fixed $\Delta$'s due to the implementation of our differential simulator and because $\Delta$ being approximated by timestep delay is a common scenario in practice.
+
+To understand the relation between time step delay and the distance $\Delta_x = \Delta x_k - \Delta x_{k-d}$, see the following:
+
+% TODO: Figure: x - x_{lin}. Top: degrees. Bottom: velocity. 
+% TODO: Table of the average distances. 
+
+\begin{center}
+    \textit{Growth of Error Terms}
+\end{center}
+
+% TODO: put original plot in appendix. Discuss it.
+
+% TODO: discussion
+% TODO: 2x2 figure of errors
+
+% Below is shelved; as the velocities are broken! 
+% \begin{center}
+%     \textit{Usage of Linear MPC in other quadruped tasks}
+% \end{center}
+
+% Although linearizations appear to be difficult to use for the simple control problem of having Anymal stand, Lecleac'h et al used linear MPC to perform various tasks on a GoTree A1 quadruped, both in simulation and in reality. This may be due to the A1's error terms growing much slower: 
+% TODO: Plot for the A1.
+
+\section{Low-level Control}
+
+\textbf{Position Tracking using Inverse Dynamics}
+
+\begin{gather}
+    \tau^d = M_j(q)\dot{u}^* + h_j(q, u) - J_{s, j}(q)\lambda^* \\
+    \tau^{ref} = \tau^d + k_P \tilde{q} + k_D \dot{\tilde{q}}
+\end{gather}
+
+\printbibliography
+
+\end{document}
